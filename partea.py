@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
-
+#hola 
 # 1. DATOS DEL PROBLEMA
 
 # Temperaturas
