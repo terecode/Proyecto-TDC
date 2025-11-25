@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+#HOLA
 # --- 1. PARÁMETROS Y CONSTANTES ---
 
 # Balance Óptico Automático
