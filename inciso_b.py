@@ -120,8 +120,7 @@ def calc_eff_I(T_celda_K, G=800):
     return eta, I
 
 # --- 4. SOLVER ITERATIVO ---
-# Comenzamos con una temperatura estimada (ej. 35°C, el panel estará más frío)
-T = np.ones((nz, nx)) * (35.0 + 273.15) 
+T = np.ones((nz, nx)) * (40.0 + 273.15) 
 error = 1.0; tol = 1e-5; max_iter = 50000; cnt = 0
 eta_final, I_final, Q_gen_total = 0, 0, 0
 

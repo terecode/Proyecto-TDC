@@ -160,8 +160,8 @@ def calc_h(T_top, T_bot):
     h_bot = 0.27*(Rab*np.cos(Angulo))**(1/4)*kb/L_caracteristico
     return h_top, h_bot
 
-# --- 4. SOLVER ITERATIVO (GAUSS SEIDEL) ---
-T = np.ones((nz, nx)) * 323.15 
+# --- 4. SOLVER ITERATIVO ---
+T = np.ones((nz, nx)) * (40.0 + 273.15) 
 
 error = 1.0
 tol = 1e-5
@@ -264,7 +264,7 @@ plt.figure(figsize=(10, 4))
 plt.imshow(T_celsius, aspect='auto', cmap='inferno', 
            extent=[0, Ancho_total*1000, 0, 1]) 
 plt.colorbar(label='Temperatura (°C)')
-plt.title('Distribución de Temperatura 2D en el Panel (Inciso a - Iterativo)')
+plt.title('Distribución de Temperatura 2D en el Panel (Inciso a9')
 plt.xlabel('Ancho (mm)')
 plt.ylabel('Espesor (Normalizado)')
 plt.show()

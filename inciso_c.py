@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 G_solar = 100.0 
 
 # DATOS DEL INCISO B (Tus resultados)
-I_circuito = 10.315  # A 
+I_circuito = 10.324  # A 
 R_celda = 0.215      # Ohm 
 
 # Calor por Efecto Joule
@@ -133,7 +133,7 @@ def calc_h(T_top, T_bot):
 
 # --- 4. SOLVER ITERATIVO (INCISO C) ---
 # Empezamos desde 30°C para eficiencia numérica
-T = np.ones((nz, nx)) * (30.0 + 273.15)
+T = np.ones((nz, nx)) * (40.0 + 273.15)
 error = 1.0; tol = 1e-5; max_iter = 50000; cnt = 0
 
 print("Calculando Inciso c) (Hot Spot)...")
