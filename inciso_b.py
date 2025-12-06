@@ -23,9 +23,11 @@ q_abs_enc    = G_solar * tau_vidrio * alpha_enc
 Ancho_celda = 0.090
 Ancho_borde = 0.001
 Ancho_total = Ancho_celda + 2*Ancho_borde
-esp_vidrio_sup, esp_enc_sup = 0.002, 0.001
+esp_vidrio_sup = 0.002
+esp_enc_sup = 0.001
 esp_celda = 0.0003
-esp_enc_inf, esp_vidrio_inf = 0.001, 0.002
+esp_enc_inf    = 0.001
+esp_vidrio_inf = 0.002
 
 # Asumimos profundidad unitaria para el cálculo de volumen (Estándar 2D)
 L_profundidad = 1.0 
