@@ -1,131 +1,134 @@
 import numpy as np
 
+# =======================
+#   GEOMETRÍA DEL PANEL
+# =======================
+L_vert = 2.416
+L_horiz = 1.09
+Ancho_total = L_horiz
 
-# Geometría
-Ancho_celda = 0.090
-Ancho_borde = 0.001
-Ancho_total = Ancho_celda + 2*Ancho_borde
-esp_vidrio_sup = 0.002
-esp_enc_sup = 0.001
-esp_celda = 0.0003
-esp_enc_inf    = 0.001
-esp_vidrio_inf = 0.002
-L_profundidad = 1.0 # m (Estándar 2D)
+# Longitudes características
+A = L_vert * L_horiz
+P = 2*(L_vert + L_horiz)
 
-# Dimensiones reales
-L_vertical = 2.416
-L_horizontal = 1.09
-
-# Propiedades Ópticas (Tabla 2)
-# Vidrio 
-rho_vidrio = 0.05                            # Reflectividad
-alpha_vidrio = 0.01                          # Absortividad
-tau_vidrio = 1.0 - rho_vidrio - alpha_vidrio # Transmisividad (Conservación de energía)
-
-# Encapsulante 
-rho_enc = 0.01                               # Reflectividad
-tau_enc = 0.98                               # Transmisividad
-alpha_enc = 1.0 - rho_enc - tau_enc          # Absortividad (implícita)
-
-# Celda 
-rho_celda = 0.05                             # Reflectividad
-tau_celda = 0.01                             # Transmisividad
-alpha_celda = 1.0 - rho_celda - tau_celda    # Absortividad (implícita)
+Lc_AP = A / P          # Natural
+Lc_L  = L_horiz        # Forzada
 
 
-# Flujos absorbidos (ópticos) reducidos por la sombra
-G_solar_b = 800.0 
-G_solar_c = 100.0 
-
-q_abs_vidrio_b = G_solar_b * alpha_vidrio
-q_abs_vidrio_c = G_solar_c * alpha_vidrio
-q_abs_enc    = G_solar_b * tau_vidrio * alpha_enc
-q_abs_enc    = G_solar_c * tau_vidrio * alpha_enc
-
-# Materiales y Ambiente
-k_vidrio, k_enc, k_celda = 1.0, 0.4, 148.0
+# =============================================
+#   PROPIEDADES AMBIENTE / CONSTANTES
+# =============================================
+g = 9.81
 T_amb = 20.0 + 273.15
 T_cielo = 230.0
 T_suelo = 20.0 + 273.15
-sigma, emisividad = 5.67e-8, 0.85
-Angulo = 45 * np.pi / 180
+sigma = 5.67e-8
+emisividad = 0.85
+
 V_viento = 1.0
-F_cielo = (1 + np.cos(Angulo)) / 2
+theta = np.radians(45)
+
+# Factores de vista
+F_cielo = (1 + np.cos(theta)) / 2
 F_suelo_sup = 1 - F_cielo
 F_suelo_inf = 1.0
 
 
-# DATOS DEL INCISO B
-I_circuito = 10.324  # A 
-R_celda = 0.215      # Ohm 
+# =============================================
+#     PROPIEDADES ÓPTICAS (Tabla del informe)
+# =============================================
+# Vidrio
+rho_vidrio = 0.05
+alpha_vidrio = 0.01
+tau_vidrio = 1 - rho_vidrio - alpha_vidrio
 
-# Calor por Efecto Joule
-# El enunciado indica usar Q = I^2 * R como calor total generado 
-Q_joule_total = (I_circuito**2) * R_celda 
-print(f"--- INCISO C ---")
-print(f"Corriente forzada: {I_circuito} A")
-print(f"Potencia Disipada (I^2*R): {Q_joule_total:.4f} W")
+# Encapsulante
+rho_enc = 0.01
+tau_enc = 0.98
+alpha_enc = 1 - rho_enc - tau_enc
+
+# Celda
+rho_celda = 0.05
+tau_celda = 0.01
+alpha_celda = 1 - rho_celda - tau_celda
+
+# Irradiancia
+G_solar = 800.0
+
+# Cálculos de absorción por capa
+flujo_q_vidrio = G_solar * alpha_vidrio
+flujo_q_enc    = G_solar * tau_vidrio * alpha_enc
+flujo_q_celda  = G_solar * tau_vidrio * tau_enc * alpha_celda
 
 
-def h_panel_solar_inclinado(Ts_sup, Ts_inf, Tinf, L, g, rho, mu, k, cp, U_inf, beta=None, theta=np.radians(45)):
+# =============================================
+#     PROPIEDADES TÉRMICAS DE MATERIALES
+# =============================================
+k_vidrio = 1.0
+k_enc = 0.4
+k_celda = 148.0
 
-    def propiedades(Ts):
-        """ Devuelve propiedades evaluadas a la temperatura de película correspondiente. """
-        Tfilm = 0.5 * (Ts + Tinf)
-        beta_local = (1/Tfilm) if beta is None else beta
-        nu = mu / rho
-        alpha = k/(rho*cp)
-        Pr = nu/alpha
-        return Tfilm, beta_local, nu, alpha, Pr
 
-    # ---------- SUPERFICIE SUPERIOR ----------
-    Tfilm_sup, beta_sup, nu_sup, alpha_sup, Pr_sup = propiedades(Ts_sup)
+# =============================================
+# PROP AIRE — coherente con el FVM FUNCIONAL
+# =============================================
+def props_aire(T_K):
+    T_C = T_K - 273.15
+    rho = 352.977 / T_K
+    cp  = 1003.7 - 0.032*T_C + 0.00035*T_C**2
+    k   = 0.0241 + 0.000076*T_C
+    mu  = (1.74 + 0.0049*T_C - 3.5e-6*T_C**2)*1e-5
+    nu  = mu / rho
+    alpha = k/(rho*cp)
+    Pr = nu/alpha
+    beta = 1/T_K
+    return rho, mu, k, cp, Pr, beta, nu, alpha
 
-    g_eff = g * np.cos(theta)
 
-    # Rayleigh para superficie superior
-    Ra_sup = g_eff * beta_sup * abs(Ts_sup - Tinf) * L**3 / (nu_sup * alpha_sup)
+def h_panel(Tsup, Tinf):
 
-    # NATURAL – placa horizontal caliente arriba
+    # Propiedades del aire para Tsup
+    rhoS, muS, kS, cpS, PrS, betaS, nuS, alphaS = props_aire(Tsup)
+    # Para Tinf
+    rhoI, muI, kI, cpI, PrI, betaI, nuI, alphaI = props_aire(Tinf)
+
+    # ===== SUPERIOR =====
+    g_eff = g*np.cos(theta)
+
+    Ra_sup = g_eff * betaS * abs(Tsup - T_amb) * Lc_AP**3 / (nuS*alphaS)
+
     if 1e4 <= Ra_sup <= 1e7:
         Nu_nat_sup = 0.54 * Ra_sup**0.25
     elif 1e7 < Ra_sup <= 1e11:
         Nu_nat_sup = 0.15 * Ra_sup**(1/3)
     else:
-        Nu_nat_sup = np.nan
+        Nu_nat_sup = 0.0
 
-    h_nat_sup = Nu_nat_sup * k / L
+    h_nat_sup = Nu_nat_sup * kS / Lc_AP
 
-    # FORZADA
-    Re_sup = rho * U_inf * L / mu
+    # Forzada
+    Re_sup = rhoS * V_viento * Lc_L / muS
     if 1e3 < Re_sup < 5e5:
-        Nu_forz_sup = 0.664 * Re_sup**0.5 * Pr_sup**(1/3)
+        Nu_forz_sup = 0.664 * Re_sup**0.5 * PrS**(1/3)
     elif 5e5 <= Re_sup < 1e8:
-        Nu_forz_sup = (0.037 * Re_sup**0.8 - 871) * Pr_sup**(1/3)
+        Nu_forz_sup = (0.037 * Re_sup**0.8 - 871)*PrS**(1/3)
     else:
         Nu_forz_sup = 0
 
-    h_forz_sup = Nu_forz_sup * k / L
+    h_forz_sup = Nu_forz_sup * kS / Lc_L
 
-    # COMBINACIÓN
     n = 3 + np.cos(theta)
-    h_sup = (h_nat_sup**n + h_forz_sup**n)**(1/n)
+    hsup = (h_nat_sup**n + h_forz_sup**n)**(1/n)
 
-    # ---------- SUPERFICIE INFERIOR ----------
-    Tfilm_inf, beta_inf, nu_inf, alpha_inf, Pr_inf = propiedades(Ts_inf)
 
-    Ra_inf = g_eff * beta_inf * abs(Ts_inf - Tinf) * L**3 / (nu_inf * alpha_inf)
+    # ===== INFERIOR (Churchill–Chu) =====
+    Ra_inf = g_eff * betaI * abs(Tinf - T_amb) * Lc_AP**3 / (nuI*alphaI)
 
-    # Churchill–Chu
     term1 = 0.825
     term2 = 0.387 * Ra_inf**(1/6)
-    term3 = (1 + (0.492/Pr_inf)**(9/16))**(8/27)
+    term3 = (1 + (0.492/PrI)**(9/16))**(8/27)
     Nu_inf = (term1 + term2/term3)**2
 
-    h_inf = Nu_inf * k / L
+    hinf = Nu_inf * kI / Lc_AP
 
-    # Información útil
-    info = {"superior": {"Ra": Ra_sup, "Re": Re_sup, "Pr": Pr_sup, "Nu_nat": Nu_nat_sup, "Nu_forz": Nu_forz_sup,
-        }, "inferior": {"Ra": Ra_inf, "Pr": Pr_inf, "Nu": Nu_inf,}}
-
-    return h_sup, h_inf, info
+    return hsup, hinf
