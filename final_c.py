@@ -1,43 +1,40 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-# --- 1. PARÁMETROS Y CONSTANTES ---
 
-# Radiación SOMBREADA sobre la celda
-G_solar = 100.0  # W/m2 (por enunciado, sombreado)
+G_solar = 100.0 
 
-# Corriente ANCLADA al valor del inciso b (ajusta con tu resultado numérico)
-I_b = 10.30      # A  <-- PON AQUÍ LA CORRIENTE QUE TE DIO EN EL INCISO b
-R_celda = 0.215  # Ohm
+I_b = 10.30      
+R_celda = 0.215  
 
-# Propiedades ópticas (vidrio y encapsulante)
+# Vidrio
 rho_vidrio = 0.05
 alpha_vidrio = 0.01
 tau_vidrio = 1.0 - rho_vidrio - alpha_vidrio
 
+#Encapsulante
 rho_enc = 0.01
 tau_enc = 0.98
 alpha_enc = 1.0 - rho_enc - tau_enc
 
-# Calor óptico absorbido (con G_solar = 100 W/m2)
+# Calor absorbido
 q_abs_vidrio = G_solar * alpha_vidrio
 q_abs_enc    = G_solar * tau_vidrio * alpha_enc
 
-# Geometría (MISMA QUE INCISO a/b NUEVOS)
-esp_vidrio_sup = 0.0021   # 2.1 mm
-esp_enc_sup    = 0.0003   # 0.3 mm
-esp_celda      = 0.0003   # 0.3 mm
-esp_enc_inf    = 0.0003   # 0.3 mm
-esp_vidrio_inf = 0.0021   # 2.1 mm
+# Dimensiones
+esp_vidrio_sup = 0.0021   
+esp_enc_sup    = 0.0003   
+esp_celda      = 0.0003   
+esp_enc_inf    = 0.0003   
+esp_vidrio_inf = 0.0021   
 
 Espesor_total = esp_vidrio_sup + esp_enc_sup + esp_celda + esp_enc_inf + esp_vidrio_inf
 
-# Geometría en X
-Ancho_celda = 0.090   # 90 mm
-Ancho_borde = 0.001   # 1 mm
+Ancho_celda = 0.090   
+Ancho_borde = 0.001   
 Ancho_total = Ancho_celda + 2*Ancho_borde
 
-L_profundidad = 1.0   # profundidad unitaria (modelo 2D)
+L_profundidad = 1.0
 
 # Materiales y ambiente
 k_vidrio = 1.0
@@ -58,9 +55,8 @@ F_cielo = (1.0 + np.cos(Angulo)) / 2.0
 F_suelo_sup = 1.0 - F_cielo
 F_suelo_inf = 1.0
 
-# --- 2. MALLA (MISMA DISCRETIZACIÓN QUE INCISO a/b NUEVOS) ---
+# Generación malla
 
-# En X: malla no uniforme (bordes + celda)
 nx_borde, nx_celda = 3, 30
 nx = 2*nx_borde + nx_celda
 
@@ -72,46 +68,46 @@ caras_x = np.concatenate([
 dx = np.diff(caras_x)
 X_nodo = (caras_x[:-1] + caras_x[1:]) / 2.0
 
-# En Z: dz = 300 µm en todo el espesor
-dz_const = 300e-6  # 300 µm
+dz_const = 300e-6 
 
-n_vidrio = int(round(esp_vidrio_sup / dz_const))  # 7
-n_enc    = int(round(esp_enc_sup    / dz_const))  # 1
-n_celda  = int(round(esp_celda      / dz_const))  # 1
+n_vidrio = int(round(esp_vidrio_sup / dz_const))  
+n_enc    = int(round(esp_enc_sup    / dz_const))  
+n_celda  = int(round(esp_celda      / dz_const))  
 
-nz = 2*n_vidrio + 2*n_enc + n_celda  # 7 + 1 + 1 + 1 + 7 = 17
+nz = 2*n_vidrio + 2*n_enc + n_celda 
 
 assert abs(nz*dz_const - Espesor_total) < 1e-9, "Revisa espesores o dz_const."
 
 dz = np.full(nz, dz_const)
-nodos_z = (np.arange(nz) + 0.5) * dz_const  # centros de nodo en Z
+nodos_z = (np.arange(nz) + 0.5) * dz_const 
 
-# Índices de capas en Z
 idx_vid_sup_end = n_vidrio
 idx_enc_sup_end = idx_vid_sup_end + n_enc
 idx_celda_end   = idx_enc_sup_end + n_celda
 idx_enc_inf_end = idx_celda_end + n_enc
-# resto: vidrio inferior
 
-# --- 3. MAPAS DE PROPIEDADES (k Y FUENTE ÓPTICA) ---
+# Mapas
 
 Mapa_K = np.zeros((nz, nx))
-Mapa_Q_optico = np.zeros((nz, nx))  # vidrio + encapsulante
+Mapa_Q_optico = np.zeros((nz, nx)) 
 
 for j in range(nz):
-    # Capa base (según Z)
     if j < idx_vid_sup_end:
         k_base = k_vidrio
         q_vol_base = q_abs_vidrio / esp_vidrio_sup
+
     elif j < idx_enc_sup_end:
         k_base = k_enc
         q_vol_base = q_abs_enc / esp_enc_sup
+
     elif j < idx_celda_end:
         k_base = 0.0
         q_vol_base = 0.0
+
     elif j < idx_enc_inf_end:
         k_base = k_enc
         q_vol_base = 0.0
+
     else:
         k_base = k_vidrio
         q_vol_base = 0.0
@@ -119,20 +115,17 @@ for j in range(nz):
     for i in range(nx):
         x_c = X_nodo[i]
         if idx_enc_sup_end <= j < idx_celda_end:
-            # Capa de la celda
             if (x_c > Ancho_borde) and (x_c < Ancho_borde + Ancho_celda):
-                # Zona activa
                 Mapa_K[j, i] = k_celda
-                Mapa_Q_optico[j, i] = 0.0  # celda: NO fuente óptica en b y c
+                Mapa_Q_optico[j, i] = 0.0 
             else:
-                # Marco encapsulante
                 Mapa_K[j, i] = k_enc
                 Mapa_Q_optico[j, i] = 0.0
         else:
             Mapa_K[j, i] = k_base
             Mapa_Q_optico[j, i] = q_vol_base
 
-# --- 4. FUNCIONES AUXILIARES (AIRE, h) ---
+# Funciones
 
 def props_aire(T_celsius):
     T = T_celsius
@@ -151,7 +144,7 @@ def calc_h(T_top, T_bot):
     T_film_top = (T_top + T_amb) / 2
     ka, nu, pr, beta = props_aire(T_film_top - 273.15)
     
-    # CONVECCIÓN FORZADA (L = L_horiz según dirección viento) 
+    # Convección forzada 
     Re_L = V_viento * L_caracteristico / nu
     if Re_L < 5e5:
         Nu_f = 0.664 * (Re_L**0.5) * (pr**(1/3))
@@ -160,12 +153,11 @@ def calc_h(T_top, T_bot):
         
     h_f = Nu_f * ka / L_caracteristico
     
-    # CONVECCIÓN NATURAL (L = Area/Perimetro) 
+    # Conveccion natural
     Area_panel = L_caracteristico * L_horiz
     Perimetro_panel = 2 * (L_caracteristico + L_horiz)
     L_char_nat = Area_panel / Perimetro_panel
     
-    # Ra
     delta_T = abs(T_top - T_amb)
     Ra_nat = (9.81 * np.cos(Angulo) * beta * delta_T * (L_char_nat**3) * pr) / (nu**2)
     
@@ -176,11 +168,11 @@ def calc_h(T_top, T_bot):
         
     h_n_top = Nu_n * ka / L_char_nat
     
-    # C) CONVECCIÓN COMBINADA
+    # Convección combinada
     n_exp = 3 + np.cos(Angulo)
     h_top = (h_n_top**n_exp + h_f**n_exp)**(1/n_exp)
     
-    # --- Superficie Inferior (Churchill-Chu) ---
+    # Superficie inferior
     T_film_bot = (T_bot + T_amb) / 2
     kb, nub, prb, betab = props_aire(T_film_bot - 273.15)
     delta_T = abs(T_bot - T_amb)
@@ -193,32 +185,29 @@ def calc_h(T_top, T_bot):
     
     return h_top, h_bot
 
-# --- 5. SOLVER ITERATIVO (DF + Joule con I_b constante) ---
+# Iteraciones
 
-T = np.ones((nz, nx)) * (40.0 + 273.15)  # campo inicial
+T = np.ones((nz, nx)) * (40.0 + 273.15)  
 
 error = 1.0
 tol = 1e-5
 max_iter = 50000
 cnt = 0
 
-# Calor Joule TOTAL y volumétrico
-Q_joule_total = (I_b**2) * R_celda  # W
+Q_joule_total = (I_b**2) * R_celda  
 volumen_celda = Ancho_celda * L_profundidad * esp_celda
-q_vol_celda = Q_joule_total / volumen_celda  # W/m3
+q_vol_celda = Q_joule_total / volumen_celda  
 
-print("Calculando Inciso c) (sombreado: G=100 W/m2, I fija del inciso b)...")
+print("Iniciando Método Iterativo...")
 
 while error > tol and cnt < max_iter:
     cnt += 1
     T_old = T.copy()
 
-    # h_top, h_bot según T promedio de superficies
     T_sup_avg = np.mean(T[0, :])
     T_inf_avg = np.mean(T[-1, :])
     h_top, h_bot = calc_h(T_sup_avg, T_inf_avg)
 
-    # Solo para monitoreo: T promedio celda
     T_celda_avg = np.mean(T[idx_enc_sup_end:idx_celda_end, nx_borde:-nx_borde])
 
     for j in range(nz):
@@ -226,23 +215,21 @@ while error > tol and cnt < max_iter:
         for i in range(nx):
             dxi = dx[i]
             dV  = dxi * dzj
-            Ax  = dzj   # área caras E/O
-            Az  = dxi   # área caras N/S
+            Ax  = dzj   
+            Az  = dxi   
             k_P = Mapa_K[j, i]
 
             # Fuente volumétrica
             if (idx_enc_sup_end <= j < idx_celda_end and
                 nx_borde <= i < nx - nx_borde and
                 Mapa_K[j, i] == k_celda):
-                # Celda activa: Joule I_b^2 R
                 rhs = q_vol_celda * dV
             else:
-                # Vidrio/encapsulante: absorción óptica (con G=100)
                 rhs = Mapa_Q_optico[j, i] * dV
 
             sigma_a_nb = 0.0
 
-            # --- OESTE ---
+            # Oeste
             if i > 0:
                 k_W = Mapa_K[j, i-1]
                 dist_x = (dxi + dx[i-1]) / 2.0
@@ -251,7 +238,7 @@ while error > tol and cnt < max_iter:
                 sigma_a_nb += a_W
                 rhs += a_W * T[j, i-1]
 
-            # --- ESTE ---
+            # Este
             if i < nx - 1:
                 k_E = Mapa_K[j, i+1]
                 dist_x = (dxi + dx[i+1]) / 2.0
@@ -260,7 +247,7 @@ while error > tol and cnt < max_iter:
                 sigma_a_nb += a_E
                 rhs += a_E * T_old[j, i+1]
 
-            # --- NORTE (superior / interno) ---
+            # Norte
             if j > 0:
                 k_N = Mapa_K[j-1, i]
                 dist_z = (dzj + dz[j-1]) / 2.0
@@ -281,7 +268,7 @@ while error > tol and cnt < max_iter:
                 rhs += h_top*T_amb*Az
                 rhs += h_rad*(F_cielo*T_cielo + F_suelo_sup*T_suelo)*Az
 
-            # --- SUR (inferior / interno) ---
+            # Sur
             if j < nz - 1:
                 k_S = Mapa_K[j+1, i]
                 dist_z = (dzj + dz[j+1]) / 2.0
@@ -299,7 +286,6 @@ while error > tol and cnt < max_iter:
                 rhs += h_bot*T_amb*Az
                 rhs += h_rad*T_suelo*Az
 
-            # Actualización SOR
             T[j, i] = rhs / sigma_a_nb
             
 
@@ -307,7 +293,7 @@ while error > tol and cnt < max_iter:
     if cnt % 5000 == 0 or cnt == 1:
         print(f"Iter {cnt}: Err={error:.2e}, T_celda={T_celda_avg-273.15:.2f} °C")
 
-# --- 6. RESULTADOS Y GRÁFICOS ---
+# Resultados
 
 T_c = T - 273.15
 
@@ -318,7 +304,7 @@ print(f"Temp máxima en la celda: {np.max(T_c[idx_enc_sup_end:idx_celda_end, nx_
 print(f"Corriente impuesta (igual a inciso b): {I_b:.3f} A")
 print(f"Calor Joule total (I^2 R): {Q_joule_total:.2f} W")
 
-# Mapa de calor 2D con espesor REAL en Z
+# Mapa de calor
 plt.figure(figsize=(10, 4))
 plt.imshow(
     T_c,
@@ -333,7 +319,7 @@ plt.ylabel('Profundidad Z (mm)')
 plt.tight_layout()
 plt.show()
 
-# Perfil de temperatura a través del espesor en el centro
+# Grafico
 indice_centro = nx // 2
 profundidades_mm = nodos_z * 1000.0
 temps_centro = T_c[:, indice_centro]
