@@ -12,7 +12,7 @@ L = 0.0254
 e = 0.004
 vol = L ** 2* e
 
-# parametros de tdc
+#parametros de tdc
 h = 1900
 Q_gen = 65/vol #w / m**3
 
@@ -26,7 +26,7 @@ Nx = 51
 dx = L / (Nx-1)
 
 
-def is_not_SS(T_anterior, T_actual, tol = 1e-3):
+def is_not_SS(T_anterior, T_actual, tol = 1e-6):
     return np.max(np.abs(T_actual - T_anterior)) >= tol
 
 T = np.ones((Ny, Nx)) * T_inf
@@ -50,37 +50,33 @@ while is_not_SS(T_anterior, T, 1e-3):
             elif i == Nx-1 and j == Ny-1:
                 T[j,i] = (dx**2 * dy**2 * Q_gen + 2 * dx**2 * k * T[j-1, i] + dy**2 * k * T[j, i-1] + dx * dy**2 * h * T_inf) / (dx * dy**2 * h + 2 * dx**2 * k + dy**2 * k)           
             
-            # Pared izquierda
+            # Pared Izquierda
             elif i == 0:
-                T[j,i] = (dx**2 * dy**2 * Q_gen 
-                        + dx**2 * k * T[j+1,i] 
-                        + dx**2 * k * T[j-1,i] 
-                        + dy**2 * k * (T[j,i] - dx * h * (T[j,i] - T_inf) / k)
-                        ) / (2*dx**2 * k + dy**2 * k)
+                T[j,i] = (dx**2 * dy**2 * Q_gen
+                        + k * dy**2 * T[j, i+1]                
+                        + k * dx**2 * (T[j+1, i] + T[j-1, i])  
+                        + h * dx * dy**2 * T_inf) / (2 * k * dx**2 + k * dy**2 + h * dx * dy**2)
+
             # Pared derecha
-            elif i == Nx-1:
-                T[j,i] = (dx**2 * dy**2 * Q_gen 
-                        + dx**2 * k * T[j+1,i]
-                        + dx**2 * k * T[j-1,i]
-                        + dy**2 * k * (T[j,i] - dx * h * (T[j,i] - T_inf) / k)
-                        ) / (2*dx**2 * k + dy**2 * k)
+            elif i == Nx - 1:
+                T[j,i] = (dx**2 * dy**2 * Q_gen
+                        + k * dy**2 * T[j, i-1]           
+                        + k * dx**2 * (T[j+1, i] + T[j-1, i])  
+                        + h * dx * dy**2 * T_inf) / (2 * k * dx**2 + k * dy**2 + h * dx * dy**2)
                 
             # Superficie superior
             elif j == 0:
                 T[j,i] = (dx**2 * dy**2 * Q_gen
-                        + dx**2 * k * T[j+1,i]
-                        + dy**2 * k * T[j,i+1]
-                        + dy**2 * k * T[j,i-1]
-                        + dx**2 * k * (T[j,i] - dy * h * (T[j,i] - T_inf) / k)
-                        ) / (dx**2 * k + 2*dy**2 * k)
+                + dx**2 * k * T[j+1, i]          
+                + dy**2 * k * (T[j, i+1] + T[j, i-1]) 
+                + dx**2 * dy * h * T_inf) / (dx**2 * k + 2*dy**2 * k + dx**2 * dy * h)
                           
             # Superficie inferior
-            elif j == Ny-1:
+            elif j == Ny - 1:
                 T[j,i] = (dx**2 * dy**2 * Q_gen
-                        + dy**2 * k * T[j, i+1]
-                        + dy**2 * k * T[j, i-1]
-                        + dx**2 * k * T[j-1, i]   # ← Este es el reemplazo adiabático T[j+1] = T[j-1]
-                        ) / (dx**2*k + 2*dy**2*k)
+                        + k * dy**2 * (T[j, i+1] + T[j, i-1])
+                        + 2 * k * dx**2 * T[j-1, i]) / (2 * k * (dx**2 + dy**2))
+                
             # Interior
             else:
                 T[j,i] = (dx**2 * dy**2 * Q_gen
