@@ -324,7 +324,7 @@ plt.imshow(
     extent=[0, Ancho_total*1000, Espesor_total*1000, 0]
 )
 plt.colorbar(label='Temperatura (°C)')
-plt.title('Distribución de Temperatura 2D - Inciso b (DF, Joule)')
+plt.title('Distribución de Temperatura 2D')
 plt.xlabel('Ancho del panel (mm)')
 plt.ylabel('Profundidad Z (mm)')
 plt.tight_layout()
@@ -336,11 +336,11 @@ profundidades_mm = nodos_z * 1000.0
 temps_centro = T_c[:, indice_centro]
 
 plt.figure()
-plt.plot(profundidades_mm, temps_centro, 'o-', label='Centro celda - Inciso b')
+plt.plot(profundidades_mm, temps_centro, 'o-', label='Centro celda')
 plt.grid(True)
 plt.xlabel('Profundidad (mm)')
 plt.ylabel('Temperatura (°C)')
-plt.title('Perfil de Temperatura a través del espesor - Inciso b')
+plt.title('Perfil de Temperatura a través del espesor')
 plt.legend()
 plt.tight_layout()
 plt.show()
