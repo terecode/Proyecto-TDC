@@ -262,8 +262,8 @@ while error > tol and cnt < max_iter:
                     (T_val**2 + T_cielo**2)*(T_val + T_cielo)*F_cielo +
                     (T_val**2 + T_suelo**2)*(T_val + T_suelo)*F_suelo_sup
                 )
-                h_eff = h_top + h_rad
-                coef_sup = h_eff * Az
+                h_comb = h_top + h_rad
+                coef_sup = h_comb * Az
                 sigma_a_nb += coef_sup
                 rhs += h_top*T_amb*Az
                 rhs += h_rad*(F_cielo*T_cielo + F_suelo_sup*T_suelo)*Az
@@ -280,8 +280,8 @@ while error > tol and cnt < max_iter:
                 # Borde inferior: convección + radiación
                 T_val = T_old[j, i]
                 h_rad = emisividad * sigma * (T_val**2 + T_suelo**2)*(T_val + T_suelo)*F_suelo_inf
-                h_eff = h_bot + h_rad
-                coef_inf = h_eff * Az
+                h_comb = h_bot + h_rad
+                coef_inf = h_comb * Az
                 sigma_a_nb += coef_inf
                 rhs += h_bot*T_amb*Az
                 rhs += h_rad*T_suelo*Az

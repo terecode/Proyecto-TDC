@@ -19,7 +19,7 @@ rho_celda = 0.05
 tau_celda = 0.01
 alpha_celda = 1.0 - rho_celda - tau_celda
 
-# Cálculo de flujos de calor absorbido (q'')
+# Calor absorbido
 q_abs_vidrio = G_solar * alpha_vidrio
 G_transmitida_vidrio = G_solar * tau_vidrio
 
@@ -278,12 +278,12 @@ while error > tol and cnt < max_iter:
                     (T_val**2 + T_cielo**2) * (T_val + T_cielo) * F_cielo +
                     (T_val**2 + T_suelo**2) * (T_val + T_suelo) * F_suelo_sup
                 )
-                h_eff = h_top + h_rad
-                a_conv_rad = h_eff * dxi
+                h_comb = h_top + h_rad
+                a_conv_rad = h_comb * dxi
                 
                 rhs += a_cond_surf * T[j, i] 
-                rhs += a_conv_rad * T_amb * (h_top / h_eff)
-                rhs += a_conv_rad * (h_rad / h_eff) * (F_cielo*T_cielo + F_suelo_sup*T_suelo)
+                rhs += a_conv_rad * T_amb * (h_top / h_comb)
+                rhs += a_conv_rad * (h_rad / h_comb) * (F_cielo*T_cielo + F_suelo_sup*T_suelo)
 
                 sigma_a_nb += a_conv_rad
 
@@ -315,12 +315,12 @@ while error > tol and cnt < max_iter:
                 
                 # Convección + radiación
                 h_rad = emisividad * sigma * (T_val**2 + T_suelo**2) * (T_val + T_suelo) * F_suelo_inf
-                h_eff = h_bot + h_rad
-                a_conv_rad = h_eff * dxi
+                h_comb = h_bot + h_rad
+                a_conv_rad = h_comb * dxi
                 
                 rhs += a_cond_surf * T[j, i]
-                rhs += a_conv_rad * T_amb * (h_bot / h_eff)
-                rhs += a_conv_rad * (h_rad / h_eff) * T_suelo
+                rhs += a_conv_rad * T_amb * (h_bot / h_comb)
+                rhs += a_conv_rad * (h_rad / h_comb) * T_suelo
                 
                 sigma_a_nb += a_conv_rad
 

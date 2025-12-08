@@ -28,7 +28,6 @@ eps_vidrio = 0.85
 rho_vidrio = 0.05
 q_solar_entrada = (1.0 - rho_vidrio) * G_solar 
 
-# Factores de Vista
 F_cielo_sup = (1.0 + np.cos(theta_rad)) / 2.0
 F_suelo_sup = 1.0 - F_cielo_sup
 F_suelo_inf = 1.0
@@ -75,8 +74,7 @@ def calcular_h(T_sup, T_inf):
     # Superficie Inferior
     T_pelicula_inf = (T_inf + T_amb) / 2
     kb, nub, prb, betab = propiedades_aire(T_pelicula_inf - 273.15)
-    g_eff_bot = 9.81 * np.cos(theta_rad)
-    Ra_L_bot = (g_eff_bot * betab * abs(T_inf - T_amb) * L_panel_vert**3 * prb) / (nub**2)
+    Ra_L_bot = (9.81 * np.cos(theta_rad) * betab * abs(T_inf - T_amb) * L_panel_vert**3 * prb) / (nub**2)
     
     num_cc = 0.387 * (Ra_L_bot**(1/6))
     den_cc = (1 + (0.492 / prb)**(9/16))**(8/27)
@@ -93,7 +91,6 @@ R_encapsulante = L_encapsulante / k_encapsulante
 R_celda  = L_celda  / k_celda
 R_cond_total = 2*R_vidrio + 2*R_encapsulante + R_celda
 
-# Valores iniciales
 T_sup = 40.0 + 273.15
 T_inf = 40.0 + 273.15
 error = 1.0
@@ -131,12 +128,10 @@ while error > tol and cont_iter < 1000:
     Matriz_A = np.zeros((2,2))
     Vector_b = np.zeros(2)
     
-    # Nodo Superior
     Matriz_A[0,0] = h_conv_sup + k_rad_sup + (1.0/R_cond_total)
     Matriz_A[0,1] = -(1.0/R_cond_total)
     Vector_b[0]   = q_solar_entrada + h_conv_sup*T_amb + ganancia_rad_sup
-    
-    # Nodo Inferior
+
     Matriz_A[1,0] = -(1.0/R_cond_total)
     Matriz_A[1,1] = h_conv_inf + k_rad_inf + (1.0/R_cond_total)
     Vector_b[1]   = h_conv_inf*T_amb + ganancia_rad_inf
